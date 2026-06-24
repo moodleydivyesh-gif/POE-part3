@@ -36,4 +36,5 @@
         <maven.compiler.release>25</maven.compiler.release>
         <exec.mainClass>com.mycompany.login1.Login1</exec.mainClass>
     </properties>
+    <name>login101</name>
 </project>

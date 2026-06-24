@@ -1,0 +1,258 @@
+# POE-part3
+Part1,2,3
+Please mark the newest submission to github
+# Login1.java â€” Full Explanation
+
+This README explains exactly what `Login1.java` does, field by field and method by method, including the reasoning behind each validation rule and how the class is used by the rest of the QuickChat application.
+
+**Package:** `com.mycompany.login1`
+**Author:** Divyesh Moodley
+
+---
+
+## Purpose of this class
+
+`Login1` is responsible for **registering a new user** and **logging that user in**. It stores one user's details in memory (username, password, cell number) and provides methods to validate that data against the assignment's formatting rules.
+
+It does not handle messages, menus, or anything related to QuickChat itself â€” its only job is authentication.
+
+---
+
+## 1. Fields
+
+```java
+private String userName;
+private String password;
+private final String firstName = "Divyesh";
+private final String lastName  = "Moodley";
+private String cellPhoneNumber;
+```
+
+| Field | Type | Purpose |
+|---|---|---|
+| `userName` | `String` | Stores the username entered during registration |
+| `password` | `String` | Stores the password entered during registration |
+| `firstName` | `String` (`final`) | Hard-coded first name used in the welcome message |
+| `lastName` | `String` (`final`) | Hard-coded last name used in the welcome message |
+| `cellPhoneNumber` | `String` | Stores the cell number entered during registration |
+
+**Why `private`?** These fields can only be changed through the class's own methods â€” this is *encapsulation*. Outside classes (like `Main.java`) cannot directly overwrite a user's password or username; they must go through `registerUser()`.
+
+**Why `final` on `firstName` and `lastName`?** These never change once set, so marking them `final` documents that intent and prevents accidental modification later in the class.
+
+---
+
+## 2. `checkUserName()`
+
+```java
+public boolean checkUserName() {
+    return userName.contains("_") && userName.length() <= 5;
+}
+```
+
+**Rule:** A valid username must contain an underscore `_` **and** be 5 characters or fewer.
+
+**Why this rule exists:** It's an arbitrary but specific formatting requirement from the assignment brief, used to test that students can combine two String conditions (`.contains()` and `.length()`) with a logical `&&`.
+
+**Examples:**
+| Username | Contains `_`? | Length â‰¤ 5? | Valid? |
+|---|---|---|---|
+| `kyl_1` | âœ… | âœ… (5 chars) | âœ… Valid |
+| `kyle!!!!` | â�Œ | â�Œ | â�Œ Invalid |
+| `_a` | âœ… | âœ… | âœ… Valid |
+
+---
+
+## 3. `checkPasswordComplexity()`
+
+```java
+public boolean checkPasswordComplexity() {
+    boolean hasUpperCase = false;
+    boolean hasNumber    = false;
+    boolean hasSpecial   = false;
+
+    for (char c : password.toCharArray()) {
+        if (Character.isUpperCase(c))
+            hasUpperCase = true;
+        if (Character.isDigit(c))
+            hasNumber = true;
+        if (!Character.isLetterOrDigit(c))
+            hasSpecial = true;
+    }
+    return password.length() >= 8 && hasUpperCase && hasNumber && hasSpecial;
+}
+```
+
+**Rule:** A valid password must be:
+- At least 8 characters long
+- Contain at least one uppercase letter
+- Contain at least one digit
+- Contain at least one special character (anything that isn't a letter or digit)
+
+**How it works, step by step:**
+1. Three boolean "flags" start as `false` â€” one for each requirement.
+2. `password.toCharArray()` converts the password String into a `char[]` array, so the loop can inspect one character at a time.
+3. For every character `c`:
+   - `Character.isUpperCase(c)` â€” turns `hasUpperCase` to `true` if it's a capital letter
+   - `Character.isDigit(c)` â€” turns `hasNumber` to `true` if it's a digit
+   - `!Character.isLetterOrDigit(c)` â€” turns `hasSpecial` to `true` if it's **neither** a letter **nor** a digit (i.e. punctuation/symbols like `@`, `!`, `#`)
+4. After the loop finishes checking every character, all three flags plus the length check must be `true` for the method to return `true`.
+
+> **Important fix applied:** An earlier draft of this method used `Character.isLetterOrDigit(c)` (without the `!`) to detect special characters. That is backwards â€” it would mark *every letter* as a special character, meaning a password like `"password"` (with no symbols at all) would incorrectly pass. The corrected line uses `!Character.isLetterOrDigit(c)` so only true symbols count.
+
+**Examples:**
+| Password | â‰¥8 chars? | Has uppercase? | Has digit? | Has special? | Valid? |
+|---|---|---|---|---|---|
+| `Password@1` | âœ… | âœ… (`P`) | âœ… (`1`) | âœ… (`@`) | âœ… Valid |
+| `password` | âœ… | â�Œ | â�Œ | â�Œ | â�Œ Invalid |
+| `Pass1` | â�Œ (5 chars) | âœ… | âœ… | â�Œ | â�Œ Invalid |
+
+---
+
+## 4. `checkCellPhoneNumber()`
+
+```java
+public boolean checkCellPhoneNumber() {
+    return cellPhoneNumber != null && cellPhoneNumber.matches("^\\+27\\d{9}$");
+}
+```
+
+**Rule:** The cell number must be in South African international format: `+27` followed by exactly 9 digits (12 characters total).
+
+**How the regex works:**
+| Symbol | Meaning |
+|---|---|
+| `^` | Start of the string |
+| `\\+27` | Literally matches `+27` |
+| `\\d{9}` | Exactly 9 digits |
+| `$` | End of the string |
+
+**Examples:**
+| Number | Matches? | Valid? |
+|---|---|---|
+| `+27838968976` | âœ… (9 digits after `+27`) | âœ… Valid |
+| `0838968976` | â�Œ (no `+27` prefix) | â�Œ Invalid |
+| `+2783896897` | â�Œ (only 8 digits) | â�Œ Invalid |
+
+---
+
+## 5. `registerUser(String userName, String password, String cellPhoneNumber)`
+
+```java
+public String registerUser(String userName, String password, String cellPhoneNumber) {
+    this.userName        = userName;
+    this.password        = password;
+    this.cellPhoneNumber = cellPhoneNumber;
+
+    if (!this.checkUserName()) {
+        return "Username is not correctly formatted;please ensure that username contains an underscore and is no more than five characters in length";
+    }
+    if (!this.checkPasswordComplexity()) {
+        return "Password is not correctly formatted ;please ensure that the password contains at least eightcharacters ,a capital letter a number, and a special character.";
+    }
+    if (!this.checkCellPhoneNumber()) {
+        return "Cell number is incorrectly formatted or does not contain an international code; please correct the number and try again.";
+    }
+    return "User successfully registered.";
+}
+```
+
+This is the **main entry point** for registration. It does three things in order:
+
+1. **Stores the input** â€” saves the three parameters into the object's fields using `this.fieldName = parameter`. This is necessary so the validation methods above (which read the fields, not parameters) have something to check.
+2. **Validates in sequence** â€” checks username first, then password, then cell number. As soon as one check fails, it `return`s immediately with the matching error message â€” it does not keep checking the rest.
+3. **Confirms success** â€” if all three checks pass, it returns `"User successfully registered."`
+
+**Why check in this exact order?** It doesn't functionally matter, but checking username â†’ password â†’ cell number gives the user one clear error to fix at a time, rather than overwhelming them with multiple error messages at once.
+
+---
+
+## 6. `loginUser(String enteredUserName, String enteredPassword)`
+
+```java
+public boolean loginUser(String enteredUserName, String enteredPassword) {
+    if (enteredUserName == null || enteredPassword == null) {
+        return false;
+    }
+    if (this.userName == null || this.password == null) {
+        return false;
+    }
+    return enteredUserName.equals(this.userName) && enteredPassword.equals(this.password);
+}
+```
+
+**Purpose:** Checks whether the username and password typed at login match the ones stored during registration.
+
+**Step by step:**
+1. **Null safety check 1:** if either entered value is `null`, immediately return `false` â€” there's nothing to compare.
+2. **Null safety check 2:** if no one has registered yet (fields are still `null`), immediately return `false` â€” login should be impossible before registration.
+3. **The actual comparison:** `.equals()` compares the *content* of two Strings character by character (unlike `==`, which would compare memory references). Both the username **and** password must match (`&&`) for login to succeed.
+
+**Why two separate null checks?** They protect against two different bad scenarios â€” a caller passing in `null` accidentally, and a user trying to log in before ever registering.
+
+---
+
+## 7. `returnLoginStatus(String enteredUserName, String enteredPassword)`
+
+```java
+public String returnLoginStatus(String enteredUserName, String enteredPassword) {
+    if (this.loginUser(enteredUserName, enteredPassword)) {
+        return " Welcome " + this.firstName + "," + this.lastName + " It is great to see you again ";
+    } else {
+        return " Username or pasword incorrect , please try again. ";
+    }
+}
+```
+
+**Purpose:** Converts the `true`/`false` result from `loginUser()` into a human-readable message for the console.
+
+- If login succeeds â†’ returns a personalised welcome message using the hard-coded `firstName` and `lastName` fields.
+- If login fails â†’ returns a generic error message telling the user to try again.
+
+This is the method `Main.java` actually prints to the screen â€” it never calls `loginUser()` directly for *displaying* output, only for the `if` check that decides whether to let the user proceed into QuickChat.
+
+---
+
+## How `Main.java` uses this class
+
+```java
+Login1 auth = new Login1();
+
+// Registration
+String result = auth.registerUser(username, password, phone);
+System.out.println(result);
+
+// Login
+String loginResult = auth.returnLoginStatus(loginUser, loginPass);
+System.out.println(loginResult);
+
+// Gatekeeping â€” only continue into QuickChat if login actually succeeded
+if (!auth.loginUser(loginUser, loginPass)) {
+    System.out.println("Login failed. Exiting.");
+    return;
+}
+```
+
+This shows the typical pattern: `registerUser()` is called once at the start, then `returnLoginStatus()` is used for the printed message, while `loginUser()` (the boolean version) is used separately to actually **gate** access to the rest of the program.
+
+---
+
+## Validation Rules Summary
+
+| Field | Rule | Method |
+|---|---|---|
+| Username | Contains `_`, â‰¤ 5 characters | `checkUserName()` |
+| Password | â‰¥ 8 characters, 1 uppercase, 1 digit, 1 special character | `checkPasswordComplexity()` |
+| Cell number | `+27` followed by exactly 9 digits | `checkCellPhoneNumber()` |
+
+---
+
+## Concepts Demonstrated in This File
+
+- **Encapsulation** â€” private fields accessed only through public methods
+- **String methods** â€” `.contains()`, `.length()`, `.equals()`, `.matches()`, `.toCharArray()`
+- **Char inspection** â€” looping through a password character by character with `Character.isUpperCase()`, `Character.isDigit()`, `Character.isLetterOrDigit()`
+- **Regular expressions** â€” validating phone number format with a regex pattern
+- **Boolean logic** â€” combining multiple conditions with `&&` and `!`
+- **Defensive programming** â€” null checks before comparing values
+- **Separation of concerns** â€” boolean methods (`loginUser`) for logic, String methods (`returnLoginStatus`) for display
